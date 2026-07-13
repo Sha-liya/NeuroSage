@@ -764,3 +764,299 @@ Future work may include:
 # License
 
 This project was developed for educational and research purposes.
+# Part 4 – LLM-Powered Feature
+
+## Chosen Track
+
+**Track B – Tabular Record Batch Scoring**
+
+---
+
+# Project Overview
+
+This project demonstrates an LLM-powered feature built on top of a cleaned Alzheimer's disease dataset. Three patient records are selected from the cleaned dataset, converted into JSON objects, and assessed using a Large Language Model (LLM). The returned JSON responses are validated using a predefined JSON Schema before being accepted.
+
+The project also implements:
+
+- Prompt engineering
+- Structured JSON output
+- JSON Schema validation
+- PII Guardrail
+- Temperature comparison
+- API-based LLM integration using Python Requests
+
+---
+
+# Technologies Used
+
+- Python
+- Pandas
+- Requests
+- JSON
+- JSONSchema
+- python-dotenv
+- Groq API
+- Llama 3.3 70B Versatile
+
+---
+
+# Project Structure
+
+```
+NeuroSage
+│
+├── notebooks/
+│      Part4_LLM_Feature.ipynb
+│
+├── outputs/
+│      cleaned_data.csv
+│
+├── README.md
+│
+├── requirements.txt
+│
+├── .gitignore
+│
+└── .env
+```
+
+---
+
+# LLM Provider
+
+Provider:
+
+Groq
+
+Model:
+
+```
+llama-3.3-70b-versatile
+```
+
+---
+
+# API Key
+
+The API key is stored securely inside a `.env` file.
+
+Example:
+
+```text
+LLM_API_KEY=YOUR_API_KEY
+```
+
+No API keys are hardcoded in the notebook.
+
+---
+
+# System Prompt
+
+```
+You are an Alzheimer's patient risk assessment assistant.
+
+Your task is to assess one patient record and return ONLY valid JSON.
+
+Use the following rubric:
+
+- risk_tier: low, medium, or high
+- flag_for_review: true or false
+- primary_signal: the strongest reason for the assessment
+- confidence: low, medium, or high
+- recommended_action: one short recommendation
+
+Return ONLY valid JSON.
+
+Worked Example
+
+Input:
+{
+ "Age":82,
+ "MMSE":15,
+ "MemoryComplaints":1,
+ "Confusion":1,
+ "Diagnosis":1
+}
+
+Output:
+{
+ "risk_tier":"high",
+ "flag_for_review":true,
+ "primary_signal":"Low MMSE with confirmed diagnosis",
+ "confidence":"high",
+ "recommended_action":"Refer to neurologist for comprehensive evaluation"
+}
+```
+
+---
+
+# User Prompt Template
+
+```
+Assess the following patient record.
+
+Return ONLY valid JSON.
+
+Patient Record:
+
+{patient_json}
+```
+
+---
+
+# Temperature Choice
+
+The model was executed with **temperature = 0** because structured JSON generation requires deterministic and repeatable outputs. At temperature 0, the model consistently selects the highest-probability next token, producing stable JSON structures suitable for validation.
+
+A second experiment was performed using **temperature = 0.7** to observe the effect of increased randomness.
+
+---
+
+# Temperature Comparison
+
+| Input | Temperature = 0 | Temperature = 0.7 | Key Difference |
+|--------|-----------------|-------------------|----------------|
+| Patient 1 | Stable JSON response | Slight wording variation | Higher variability |
+| Patient 2 | Stable JSON response | Recommendation wording changed | Less deterministic |
+| Patient 3 | Stable JSON response | Different explanation style | More creative responses |
+
+---
+
+# JSON Output Schema
+
+```json
+{
+  "risk_tier": "string",
+  "flag_for_review": true,
+  "primary_signal": "string",
+  "confidence": "string",
+  "recommended_action": "string"
+}
+```
+
+Required fields:
+
+- risk_tier
+- flag_for_review
+- primary_signal
+- confidence
+- recommended_action
+
+---
+
+# JSON Validation
+
+The JSON returned by the LLM is validated using **jsonschema.validate()**.
+
+If parsing or validation fails:
+
+- ValidationError is caught.
+- JSONDecodeError is caught.
+- A fallback dictionary containing null values is returned.
+
+Example fallback:
+
+```json
+{
+  "risk_tier": null,
+  "flag_for_review": null,
+  "primary_signal": null,
+  "confidence": null,
+  "recommended_action": null
+}
+```
+
+---
+
+# PII Guardrail
+
+Before every API request, a regular expression checks for:
+
+- Email addresses
+- Phone numbers
+
+If PII is detected:
+
+```
+Input blocked: PII detected.
+```
+
+The LLM request is not sent.
+
+---
+
+# Guardrail Demonstration
+
+| Input | Result |
+|--------|--------|
+| Email: rethi@gmail.com | Blocked |
+| Age:73 BMI:22 MMSE:21 | Allowed |
+
+---
+
+# Batch Scoring Results
+
+| Patient | Validation | Guardrail |
+|----------|------------|-----------|
+| Patient 1 | Pass | Passed |
+| Patient 2 | Pass | Passed |
+| Patient 3 | Pass | Passed |
+
+---
+
+# Workflow
+
+```
+Cleaned Dataset
+        │
+        ▼
+Select Three Records
+        │
+        ▼
+Convert to JSON
+        │
+        ▼
+PII Guardrail
+        │
+        ▼
+LLM API
+        │
+        ▼
+Structured JSON Output
+        │
+        ▼
+JSON Validation
+        │
+        ▼
+Validated Assessment
+```
+
+---
+
+# Installation
+
+Install dependencies
+
+```bash
+pip install requests pandas python-dotenv jsonschema
+```
+
+---
+
+# Running the Project
+
+1. Clone the repository.
+
+2. Create a `.env` file.
+
+3. Add your API key.
+
+4. Open the notebook.
+
+5. Run all cells from top to bottom.
+
+---
+
+# Conclusion
+
+This project demonstrates how Large Language Models can be integrated into biomedical data workflows for structured batch assessment. The notebook includes secure API handling, prompt engineering, JSON validation, safety guardrails, and reproducible inference using deterministic temperature settings.
